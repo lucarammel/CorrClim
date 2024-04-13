@@ -1,0 +1,40 @@
+Package: CorrClim
+Title: CorrClim : Climatic correction toolbox
+Version: 1.0.0
+Authors@R: 
+    c(person(given = "Guillaume",
+           family = "Hofmann",
+           role = c("aut", "cre"),
+           email = "guillaume.hofmann@edf.fr"),
+    person(given = "Lucas", 
+           family = "Pereira",
+           role = c('aut'), 
+           email = "lucas.pereira@artelys.com"))
+Description: Climatic correction toolbox for energy consumption.
+License: see LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports: 
+    data.table,
+    dplyr,
+    glue,
+    httr,
+    jsonlite,
+    stringr,
+    magrittr,
+    MASS,
+    R39Toolbox,
+    R6,
+    lubridate,
+    mgcv,
+    plotly,
+    MLmetrics, 
+    prophet, 
+    TTR, 
+    rBayesianOptimization
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

@@ -1,0 +1,73 @@
+
+# How to handle TimeseriesDT object ? Follow the guide ! 
+
+```{r setup}
+library(CorrClim)
+```
+
+# Load toy data
+
+```{r}
+
+timeseries = readRDS('../tests/toy/timeseries.rds')
+weather_observed = readRDS('../tests/toy/weather_observed.rds')
+```
+
+# Base operation TimeseriesDT object
+
+```{r}
+# Instantiate a TimeseriesDT
+ts = TimeseriesDT$new(timeseries)
+
+# Clone the object to avoid mutable behaviours
+new_ts = ts$clone()
+```
+
+# Global usage
+
+```{r}
+# Use the getter method to get the data table of your object
+ts_data_table = ts$get_timeseries()
+
+# Export to csv
+ts$export('../tests/timeseries.csv', format = 'csv')
+```
+
+**Note** : Each method has an `inplace` argument set to `TRUE` by default. It means that : **by default, the method called changes the timeseries itself and doesn't return a new TimeseriesDT object**
+
+```{r}
+
+# Use inplace = TRUE to select a specific variable into your timeseries (It returns the timeseriesDT objet also)
+ts$select('variable_example') 
+
+# Use inplace = TRUE to select this variable and return a new timeseries object
+new_ts = ts$select('variable_example', inplace = FALSE)
+```
+
+**Note** : Use method chaining to make data pipelines.
+
+```{r}
+ts$remove_na()$remove_duplicated()$add_suffix('y','_grad')$aggregate('day')$shift('y_grad', n = 2)$select('y_grad_shifted')
+```
+
+
+# Use built-in functions for timeseries pipelines
+
+```{r}
+ts$remove_na() # Remove NAs from timeseries
+
+ts$remove_duplicated(by = c('time')) # Removes duplicated values by time
+
+ts$aggregate('day', fun = mean) # Aggregate the timeseries to a new granularity
+
+ts$assign('test', c(1)) # Add vector to a variable called 'test'
+
+ts$remove_variable('test') # Remove the test variable created
+
+ts$rename(old_cols='y', new_cols='y_new_name') # Rename columns
+
+ts$get_granularity('hour') # Get the granularity in hour of your timeseries
+
+ts$merge(ts, by = 'time', how = 'inner', suffixes = c('ts', 'merged_ts')) # Merge two timeseries 
+
+```

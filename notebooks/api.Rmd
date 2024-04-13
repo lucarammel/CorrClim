@@ -1,0 +1,31 @@
+# How to handle the APIs ? Follow the guide ! 
+
+```{r setup}
+library(CorrClim)
+```
+
+# API usages
+
+Here find different snippets to get data from `Meteo France`, `ENEDIS Open Data`.
+
+First set up a proxy if needed.
+
+```{r}
+
+Sys.setenv(http_proxy = proxy_url)
+Sys.setenv(https_proxy = proxy_url)
+Sys.setenv(ftp_proxy = proxy_url)
+Sys.setenv(no_proxy = ".edf.fr")
+
+# Temperature timeseries from ENEDIS open data
+extract_weather_enedis = api_get_weather_enedis(start_date = "2022-01-01", end_date = "2022-01-03")
+
+# Get holidays from timewindow
+extract_holidays = api_get_holidays(start_date = "2022-01-01", end_date = "2022-01-03")
+
+# Get all stations from Meteo France in a specified departement
+stations_list  = api_get_stations(departement = 78)
+
+# Get all data from stations id specified from Meteo France
+df_weather = api_get_weather_meteo_france(station_id = c("01014002"), date_start = as.Date('2023-01-01') , date_end = as.Date('2023-01-02'))
+```

@@ -1,0 +1,76 @@
+# How to handle Metrics object ? Follow the guide ! 
+
+```{r setup}
+library(CorrClim)
+```
+
+# Load toy data 
+
+```{r}
+# Load toy data in the repo
+timeseries_cc = readRDS('../tests/toy/timeseries_climate_corrected.rds')
+timeseries = readRDS('../tests/toy/timeseries.rds')
+weather_observed = readRDS('../tests/toy/weather_observed.rds')
+weather_target = readRDS('../tests/toy/weather_target.rds')
+
+# Merge weather data
+weather = TimeseriesDT$new(weather_observed)$merge(weather_target, suffixes = c('_observed', '_target'), inplace = FALSE)
+```
+
+# Instantiate a Metrics object
+
+```{r}
+metrics = Metrics$new()
+```
+
+# Investigate Time series modeling performance
+
+## Plot time series
+
+```{r}
+fig = metrics$plot_timeseries(timeseries, 
+                              timeseries_cc,
+                              ts_to_compare_with = weather, 
+                              variables_to_compare = c('temperature_observed', 'temperature_target'), 
+                              granularity = 'day', 
+                              title = 'Observed vs modeled consumption',
+                              legend = c('Observed', 'Climate corrected'),
+                              legend_difference = 'Climate correction volume',
+                              ylabel = 'Consumption [kW]',
+                              ylabel_to_compare = 'Temperature [C]')
+
+fig
+```
+
+## RMSE / MAPE / BIAS
+
+```{r}
+# Compute the plotly graph of differents quantitative metrics 
+RMSE_fig = metrics$RMSE(timeseries, timeseries_cc, granularity='day')
+MAPE_fig = metrics$MAPE(timeseries, timeseries_cc, granularity='day')
+BIAS_fig = metrics$BIAS(timeseries, timeseries_cc, granularity='day')
+
+RMSE_fig
+```
+
+# Barplot of the climate correction volume 
+
+```{r}
+fig = metrics$plot_bar_volume_correction(timeseries, timeseries_cc)
+
+fig
+```
+
+## Scatter consumption vs weather plot
+
+```{r}
+fig = metrics$plot_scatter_timeseries(y_ts = timeseries, 
+                                      second_y_ts = timeseries_cc,
+                                      x_ts = weather_observed,
+                                      xlabel = 'Temperature [°C]', 
+                                      ylabel = 'Consumption [kW]', 
+                                      title = 'Consumption vs temperature', 
+                                      legend = c('Observed','Climate correction'))
+
+fig
+```

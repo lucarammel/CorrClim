@@ -1,0 +1,166 @@
+# How to perform a climatic correction ? Follow the guide ! 
+
+```{r setup}
+library(CorrClim)
+```
+
+# Load toy data
+
+```{r}
+timeseries = readRDS('../tests/toy/timeseries.rds')
+weather_observed = readRDS('../tests/toy/weather_observed.rds')
+weather_target = readRDS('../tests/toy/weather_target.rds')
+```
+
+# Instantiate a model, fit and apply
+
+Find here the global workflow to perform a climate correction using *CorrClim* : 
+
+```{r}
+# Instantiate the model (here a GradDelta) perform by instant of the day
+clf = GradDelta$new(formula = y ~ temperature, by_instant = TRUE, granularity = 'day')
+
+# Instantiate the climatic corrector
+climatic_corrector = ClimaticCorrector$new(timeseries_model = clf)
+
+# Fit the model
+climatic_corrector$fit(timeseries, weather_observed)
+
+# Apply the model and make a prediction
+timeseries_cc = climatic_corrector$apply(timeseries, weather_observed, weather_target)
+```
+
+# Add smoothing terms
+
+## Add one smoother
+
+You can use a smoother to perform a smoothing on one variable before fitting and predicting.
+
+```{r}
+# Instantiate an exponential smoother
+smoother = MultiSmoother$new(smoothers = c(ExponentialSmoother$new(alpha = 0.02)), 
+                             variables = 'temperature')
+
+# Instantiate a model and precise its smoothing terms.
+clf = GAM$new(formula = y ~ s(temperature) + s(posan) + jour_semaine + jour_ferie + ponts, smoothers = smoother)
+
+climatic_corrector = ClimaticCorrector$new(timeseries_model = clf)
+
+climatic_corrector$fit(timeseries, weather_observed)
+
+timeseries_cc = climatic_corrector$apply(timeseries, weather_observed, weather_target)
+```
+
+## Add multiple smoothers
+
+You can use a MultipleSmoother to perform a smoothing on multiples variables before fitting and predicting.
+
+```{r}
+
+weather_observed[, c('temperature_exp', 'temperature_dummy') := .(temperature, temperature)]
+weather_target[, c('temperature_exp', 'temperature_dummy') := .(temperature, temperature)]
+
+# Instantiate an exponential smoother
+smoother_exp = ExponentialSmoother$new(alpha = 0.02)
+smoother_dummy = DummySmoother$new()
+
+multi_smoother = MultiSmoother$new(smoothers = c(smoother_exp, smoother_dummy), 
+                                   variables = c('temperature_exp','temperature_dummy'))
+
+# Instantiate a model and precise its smoothing terms.
+clf = GAM$new(formula = y ~ s(temperature) + s(posan) + jour_semaine + jour_ferie + ponts, 
+              smoothers = multi_smoother)
+
+climatic_corrector = ClimaticCorrector$new(timeseries_model = clf)
+
+climatic_corrector$fit(timeseries, weather_observed)
+
+timeseries_cc = climatic_corrector$apply(timeseries, weather_observed, weather_target)
+```
+
+## Use Smoother on its own.
+
+Using a basic exponential smoother 
+
+```{r}
+# Instantiate an exponential Smoother
+smoother = ExponentialSmoother$new(alpha = 0.02)
+
+# Fit and smooth the timeseries
+result = smoother$fit_smooth(weather_observed)
+```
+
+Now using an GridSearch optimized smoother : 
+
+```{r}
+# Create a grid list
+grid = list(alpha = seq(0.001, 1, 0.1))
+
+# Instantiate a GridSearch
+smoother = GridSearchSmoother$new(grid = grid, smoother = ExponentialSmoother)
+
+smoother$fit(weather_observed, timeseries)
+
+smoothed_timeseries = smoother$smooth(weather_observed)
+
+# Get the best params and best smoother
+smoother$get_best_params()
+smoother$get_best_smoother()
+```
+
+
+Now using a Bayesian optimized smoother : 
+
+```{r}
+# Create a the bound list 
+bounds = list(alpha = c(0.001, 1))
+
+smoother = BayesianSmoother$new(bounds = bounds, smoother = ExponentialSmoother)
+
+smoother$fit(weather_observed, timeseries)
+
+result = smoother$smooth(weather_observed)
+
+# Get the best params and best smoother
+smoother$get_best_params()
+smoother$get_best_smoother()
+```
+
+# Add Operator 
+
+## Specify the Operator in Climatic Corrector
+
+You can precise the operator you want to perform the climate correction : 
+
+```{r}
+# Instantiate an operator (can be Additive, Multiplicative)
+operator = OperatorAdditive$new()
+
+# Instantiate a model and precise its smoothing terms if needed.
+clf = GAM$new(formula = y ~ s(temperature) + s(posan) + jour_semaine + jour_ferie + ponts)
+
+climatic_corrector = ClimaticCorrector$new(timeseries_model = clf, operator = operator)
+
+climatic_corrector$fit(timeseries, weather_observed)
+
+prediction = climatic_corrector$apply(timeseries, weather_observed, weather_target)
+```
+
+## Use a 2 Moments Climatic Corrector and its associated operator
+
+```{r}
+weather_observed[, year := year(time)]
+
+operator = Operator2Moments$new()
+
+timeseries_model = GAM$new(formula = y ~ s(temperature) + s(posan) + jour_semaine + jour_ferie + ponts)
+timeseries_std_model = GamStd$new(conditional_expectation_model = timeseries_model, formula = y ~ s(temperature) + s(posan) + jour_semaine + jour_ferie + ponts)
+
+climatic_corrector = ClimaticCorrector$new(timeseries_model = timeseries_model, 
+                                           timeseries_std_model = timeseries_std_model, 
+                                           operator = operator)
+
+climatic_corrector$fit(timeseries, weather_observed, fold_varname = 'year')
+
+timeseries_cc = climatic_corrector$apply(timeseries, weather_observed, weather_target)
+```
