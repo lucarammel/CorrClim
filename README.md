@@ -28,10 +28,10 @@ A **toolbox** for facilitating climatic correction of timeseries and the impleme
 
 ## Installation
 
-Clone or download the archive [here](https://gitlab.pleiade.edf.fr/recoflux/corrclim/-/archive/main/corrclim-main.tar.gz) : 
+Clone or download the archive [here](https://github.com/lucarammel/corrclim/-/archive/main/corrclim-main.tar.gz) : 
 
 ```bash 
-git clone https://gitlab.pleiade.edf.fr/recoflux/corrclim.git
+git clone https://github.com/lucarammel/corrclim.git
 ```
 
 Load the package then : 
